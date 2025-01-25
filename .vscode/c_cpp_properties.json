@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "intelliSenseMode": "linux-gcc-arm64",
+            "compilerArgs": [
+                "-Wall", "-Werror", "-std=gnu11", "-O2", "-lm", "-g3"
+            ]
+        }
+    ],
+    "version": 4
+}

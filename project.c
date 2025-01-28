@@ -25,11 +25,35 @@ typedef struct hash_table_recipes {
     int count;
 } hash_table_recipes;
 
-// Recipe book functions
+
+typedef struct ingredient_stock {
+    int expire;
+    int weight;
+} ingredient_stock;
+
+typedef struct hash_table_item {
+    char *key;
+    ingredient_stock ingredient_stocks[1000];
+    int weight_tot;
+} hash_table_item;
+
+typedef struct hash_table {
+    hash_table_item *items;
+    int size;
+    int count;
+} hash_table;
+
+// Recipe book methods
 int hash_function_recipes(hash_table_recipes *table, char *key);
 hash_table_recipes* hash_table_recipes_create();
 hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char *key);
 void hash_table_insert_recipes(hash_table_recipes *table, char *recipe);
+
+//Inventory methods
+int hash_function(hash_table *table, char *key);
+hash_table* hash_table_create();
+hash_table_item* hash_table_search(hash_table *table, char *key);
+void hash_table_insert(hash_table *table, char *ingredient);
 
 int main(int arc, char const *argv[]) {
     char buffer[BUFFER_DIM], *command, *recipe, *ingredient;
@@ -151,4 +175,42 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
 
     printf("aggiunta\n");
     return;
+}
+
+int hash_function(hash_table *table, char *key) {
+    unsigned long hash = 5381;
+    int character;
+
+    while ((character = *key++)) {
+        hash = ((hash << 5) + hash) + character;
+    }
+
+    return hash % table -> size;
+}
+
+hash_table* hash_table_create() {
+    hash_table *table = (hash_table *) malloc(sizeof(hash_table));
+    table -> size = HASH_TABLE_DIM;
+    table -> count = 0;
+
+    table -> items = calloc(table -> size, sizeof(hash_table_item));
+
+    return table;
+}
+
+hash_table_item* hash_table_search(hash_table *table, char *key) {
+    int hash = hash_function(table, key);
+
+    while (table -> items[hash].key != NULL) {
+        if (strcmp(key, table -> items[hash].key) == 0) {
+            return &table -> items[hash];
+        } else {
+            hash++;
+            if (hash >= table -> size) {
+                return NULL;
+            }
+        }
+    }
+
+    return NULL;
 }

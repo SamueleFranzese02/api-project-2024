@@ -15,7 +15,7 @@ typedef struct {
 
 typedef struct {
     char *key;
-    recipe_ingredient recipe_ingredients[1000];
+    recipe_ingredient *recipe_ingredients;
     int recipes_count;
 } hash_table_recipes_item;
 
@@ -53,6 +53,7 @@ int hash_function_recipes(hash_table_recipes *table, char *key);
 hash_table_recipes* hash_table_recipes_create();
 hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char *key);
 void hash_table_insert_recipes(hash_table_recipes *table, char *recipe);
+void hash_table_remove_recipe(hash_table_recipes *table, char *recipe);
 
 //Inventory methods
 int hash_function(hash_table *table, char *key);
@@ -90,20 +91,10 @@ int main(int arc, char const *argv[]) {
                 hash_table_insert_recipes(recipe_book, recipe);
             } else if (!strcmp(command, "rimuovi_ricetta")) {
                 recipe = strtok(NULL, " ");
-                printf("%s %s\n", command, recipe);
+                hash_table_remove_recipe(recipe_book, recipe);
             } else if (!strcmp(command, "rifornimento")) {
                 ingredient = strtok(NULL, " ");
                 hash_table_insert(inventory, ingredient);
-                /*weight = atoi(strtok(NULL, " "));
-                expire_time = atoi(strtok(NULL, " "));
-
-                printf("%s %s %d %d", command, ingredient, weight, expire_time);
-                while ((ingredient = strtok(NULL, " ")) != NULL) {
-                    weight = atoi(strtok(NULL, " "));
-                    expire_time = atoi(strtok(NULL, " "));
-                    printf(" %s %d %d", ingredient, weight, expire_time);
-                }*/
-
                 printf("\n");
             } else if (!strcmp(command, "ordine")) {
                 recipe = strtok(NULL, " ");
@@ -174,6 +165,7 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
     }
 
     table -> recipes_items[hash].key = strdup(recipe);
+    table -> recipes_items[hash].recipe_ingredients = calloc(1000, sizeof(recipe_ingredient));
     table -> recipes_items[hash].recipes_count = 0;
     table -> count++;
 
@@ -190,6 +182,26 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
 
     printf("aggiunta\n");
     return;
+}
+
+void hash_table_remove_recipe(hash_table_recipes *table, char *recipe) {
+    hash_table_recipes_item *recipe_item;
+
+    recipe_item = hash_table_search_recipes(table, recipe);
+
+    if (recipe_item == NULL) {
+        printf("non presente\n");
+        return;
+    } else if (recipe_item -> recipes_count == 0) {
+        free(recipe_item -> recipe_ingredients);
+        recipe_item -> key = NULL;
+        table -> count--;
+        printf("rimossa\n");
+        return;
+    } else {
+        printf("ordini in sospeso\n");
+        return;
+    }
 }
 
 int hash_function(hash_table *table, char *key) {

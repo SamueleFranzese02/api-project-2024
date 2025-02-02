@@ -31,9 +31,14 @@ typedef struct ingredient_stock {
     int weight;
 } ingredient_stock;
 
+typedef struct min_heap_struct {
+    ingredient_stock ingredient_stocks[1000];
+    int size;
+} min_heap_struct;
+
 typedef struct hash_table_item {
     char *key;
-    ingredient_stock ingredient_stocks[1000];
+    min_heap_struct min_heap_ingredient_stocks;
     int weight_tot;
 } hash_table_item;
 
@@ -55,12 +60,21 @@ hash_table* hash_table_create();
 hash_table_item* hash_table_search(hash_table *table, char *key);
 void hash_table_insert(hash_table *table, char *ingredient);
 
+//Min heap methods
+void swap(ingredient_stock *x, ingredient_stock *y);
+void min_heapify(min_heap_struct *min_heap, int i);
+void insert_min_heap(min_heap_struct *min_heap, int expire, int weight);
+ingredient_stock extract_min(min_heap_struct *min_heap);
+ingredient_stock get_min(min_heap_struct *min_heap);
+
 int main(int arc, char const *argv[]) {
     char buffer[BUFFER_DIM], *command, *recipe, *ingredient;
-    int camion_frequency, camion_weight, weight, quantity, expire_time;
+    int camion_frequency, camion_weight, quantity;
     hash_table_recipes *recipe_book;
+    hash_table *inventory;
 
     recipe_book = hash_table_recipes_create();
+    inventory = hash_table_create();
 
     if (fgets(buffer, BUFFER_DIM, stdin) != NULL) {
         camion_frequency = atoi(strtok(buffer, " "));
@@ -79,7 +93,8 @@ int main(int arc, char const *argv[]) {
                 printf("%s %s\n", command, recipe);
             } else if (!strcmp(command, "rifornimento")) {
                 ingredient = strtok(NULL, " ");
-                weight = atoi(strtok(NULL, " "));
+                hash_table_insert(inventory, ingredient);
+                /*weight = atoi(strtok(NULL, " "));
                 expire_time = atoi(strtok(NULL, " "));
 
                 printf("%s %s %d %d", command, ingredient, weight, expire_time);
@@ -87,7 +102,7 @@ int main(int arc, char const *argv[]) {
                     weight = atoi(strtok(NULL, " "));
                     expire_time = atoi(strtok(NULL, " "));
                     printf(" %s %d %d", ingredient, weight, expire_time);
-                }
+                }*/
 
                 printf("\n");
             } else if (!strcmp(command, "ordine")) {
@@ -213,4 +228,66 @@ hash_table_item* hash_table_search(hash_table *table, char *key) {
     }
 
     return NULL;
+}
+
+void swap(ingredient_stock *x, ingredient_stock *y) {
+    ingredient_stock temp = *x;
+    *x = *y;
+    *y = temp;
+}
+
+void min_heapify(min_heap_struct *min_heap, int i) {
+    int smallest, l, r;
+
+    l = 2 * i + 1;
+    r = 2 * i + 2;
+
+    if (l < min_heap -> size && min_heap -> ingredient_stocks[l].expire < min_heap -> ingredient_stocks[i].expire) {
+        smallest = l;
+    } else {
+        smallest = i;
+    }
+
+    if (r < min_heap -> size && min_heap -> ingredient_stocks[r].expire < min_heap -> ingredient_stocks[smallest].expire) {
+        smallest = r;
+    }
+
+    if (smallest != i) {
+        swap(&min_heap -> ingredient_stocks[i], &min_heap -> ingredient_stocks[smallest]);
+        min_heapify(min_heap, smallest);
+    }
+}
+
+void insert_min_heap(min_heap_struct *min_heap, int expire, int weight) {
+    int i;
+
+    i = min_heap -> size;
+    min_heap -> ingredient_stocks[i].expire = expire;
+    min_heap -> ingredient_stocks[i].weight = weight;
+    (min_heap -> size)++;
+
+    while (i != 0 && min_heap -> ingredient_stocks[(i - 1) / 2].expire > min_heap -> ingredient_stocks[i].expire) {
+        swap(&min_heap -> ingredient_stocks[i], &min_heap -> ingredient_stocks[(i - 1) / 2]);
+        i = (i - 1) / 2;
+    }
+}
+
+ingredient_stock extract_min(min_heap_struct *min_heap) {
+    ingredient_stock root;
+    
+    if (min_heap -> size == 1) {
+        (min_heap -> size)--;
+        return min_heap -> ingredient_stocks[0];
+    }
+    
+    root = min_heap -> ingredient_stocks[0];
+    min_heap -> ingredient_stocks[0] = min_heap -> ingredient_stocks[(min_heap -> size) - 1];
+    (min_heap -> size)--;
+    min_heapify(min_heap, 0);
+
+    return root;
+}
+
+ingredient_stock get_min(min_heap_struct *min_heap) {
+    return min_heap -> ingredient_stocks[0];
 }

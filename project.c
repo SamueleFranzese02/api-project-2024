@@ -291,3 +291,33 @@ ingredient_stock extract_min(min_heap_struct *min_heap) {
 ingredient_stock get_min(min_heap_struct *min_heap) {
     return min_heap -> ingredient_stocks[0];
 }
+
+void hash_table_insert(hash_table *table, char *ingredient) {
+    int weight, expire, hash;
+    hash_table_item *product;
+
+    while (ingredient != NULL) {
+        weight = atoi(strtok(NULL, " "));
+        expire = atoi(strtok(NULL, " "));
+        
+        hash = hash_function(table, ingredient);
+        product = hash_table_search(table, ingredient);
+
+        if (product != NULL) {
+            insert_min_heap(&product -> min_heap_ingredient_stocks, expire, weight);
+            product -> weight_tot = product -> weight_tot + weight;
+        } else {
+            while (table -> items[hash].key != NULL) {
+                hash++;
+            }
+
+            table -> items[hash].key = strdup(ingredient);
+            table -> items[hash].min_heap_ingredient_stocks.size = 0;
+            insert_min_heap(&table -> items[hash].min_heap_ingredient_stocks, expire, weight);
+            table -> items[hash].weight_tot = weight;
+            table -> count++;
+        }
+
+        ingredient = strtok(NULL, " ");
+    }
+}

@@ -8,41 +8,41 @@
 #define BUFFER_DIM 100000
 #define HASH_TABLE_DIM 40000
 
-typedef struct recipe_ingredient {
+typedef struct {
     char *ingredient;
     int weight;
 } recipe_ingredient;
 
-typedef struct hash_table_recipes_item {
+typedef struct {
     char *key;
     recipe_ingredient recipe_ingredients[1000];
     int recipes_count;
 } hash_table_recipes_item;
 
-typedef struct hash_table_recipes {
+typedef struct {
     hash_table_recipes_item *recipes_items;
     int size;
     int count;
 } hash_table_recipes;
 
 
-typedef struct ingredient_stock {
+typedef struct {
     int expire;
     int weight;
 } ingredient_stock;
 
-typedef struct min_heap_struct {
+typedef struct {
     ingredient_stock ingredient_stocks[1000];
     int size;
 } min_heap_struct;
 
-typedef struct hash_table_item {
+typedef struct {
     char *key;
     min_heap_struct min_heap_ingredient_stocks;
     int weight_tot;
 } hash_table_item;
 
-typedef struct hash_table {
+typedef struct {
     hash_table_item *items;
     int size;
     int count;

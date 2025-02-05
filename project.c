@@ -7,6 +7,7 @@
 #define COMMAND 16
 #define BUFFER_DIM 100000
 #define HASH_TABLE_DIM 40000
+#define MIN_HEAP_DIM 1500
 
 typedef struct {
     char *ingredient;
@@ -32,7 +33,7 @@ typedef struct {
 } ingredient_stock;
 
 typedef struct {
-    ingredient_stock ingredient_stocks[1000];
+    ingredient_stock ingredient_stocks[MIN_HEAP_DIM];
     int size;
 } min_heap_struct;
 
@@ -54,6 +55,8 @@ hash_table_recipes* hash_table_recipes_create();
 hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char *key);
 void hash_table_insert_recipes(hash_table_recipes *table, char *recipe);
 void hash_table_remove_recipe(hash_table_recipes *table, char *recipe);
+float hash_table_load_factor(hash_table_recipes *table);
+float hash_table_load_factor_inventory(hash_table *table);
 
 //Inventory methods
 int hash_function(hash_table *table, char *key);
@@ -70,7 +73,7 @@ ingredient_stock get_min(min_heap_struct *min_heap);
 
 int main(int arc, char const *argv[]) {
     char buffer[BUFFER_DIM], *command, *recipe, *ingredient;
-    int camion_frequency, camion_weight, quantity;
+    int camion_frequency, camion_weight, quantity, timestamp = 0;
     hash_table_recipes *recipe_book;
     hash_table *inventory;
 
@@ -103,9 +106,13 @@ int main(int arc, char const *argv[]) {
             } else {
                 printf("Not valid\n");
             } 
+
+            timestamp++;
         }   
     }
 
+    //printf("Carico massimo finale: %.2f\n", hash_table_load_factor(recipe_book));
+    //printf("Carico massimo finale: %.2f\n", hash_table_load_factor_inventory(inventory));
     return 0;
 }
 
@@ -165,7 +172,7 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
     }
 
     table -> recipes_items[hash].key = strdup(recipe);
-    table -> recipes_items[hash].recipe_ingredients = calloc(1000, sizeof(recipe_ingredient));
+    table -> recipes_items[hash].recipe_ingredients = calloc(MIN_HEAP_DIM, sizeof(recipe_ingredient));
     table -> recipes_items[hash].recipes_count = 0;
     table -> count++;
 
@@ -181,6 +188,7 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
     }
 
     printf("aggiunta\n");
+    //printf("Carico massimo: %.2f\n", hash_table_load_factor(table));
     return;
 }
 
@@ -332,4 +340,18 @@ void hash_table_insert(hash_table *table, char *ingredient) {
 
         ingredient = strtok(NULL, " ");
     }
+}
+
+float hash_table_load_factor(hash_table_recipes *table) {
+    if (table->size == 0) {
+        return 0.0; // Evita divisione per zero
+    }
+    return (float)table->count / table->size;
+}
+
+float hash_table_load_factor_inventory(hash_table *table) {
+    if (table->size == 0) {
+        return 0.0; // Evita divisione per zero
+    }
+    return (float)table->count / table->size;
 }

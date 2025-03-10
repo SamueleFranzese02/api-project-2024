@@ -55,6 +55,18 @@ typedef struct {
     int count;
 } hash_table;
 
+typedef struct {
+    char order_name[STRING_DIM];
+    int quantity;
+    int weight;
+    int timestamp;
+} order_item;
+
+typedef struct {
+    order_item *order_items;
+    int size;
+} order_struct;
+
 // Recipe book methods
 int hash_function_recipes(hash_table_recipes *table, char key[]);
 hash_table_recipes* hash_table_recipes_create();
@@ -82,9 +94,19 @@ int main(int arc, char const *argv[]) {
     int camion_frequency, camion_weight, quantity, timestamp = 0, result;
     hash_table_recipes *recipe_book;
     hash_table *inventory;
+    order_struct *orders_completed, *orders_pending, *orders_sent;
 
     recipe_book = hash_table_recipes_create();
     inventory = hash_table_create();
+    orders_completed = (order_struct *) malloc(sizeof(order_struct));
+    orders_completed -> order_items = calloc(ORDERS_DIM, sizeof(order_item));
+    orders_completed -> size = 0;
+    orders_pending = (order_struct *) malloc(sizeof(order_struct));
+    orders_pending -> order_items = calloc(ORDERS_DIM_WAITING, sizeof(order_item));
+    orders_pending -> size = 0;
+    orders_sent = (order_struct *) malloc(sizeof(order_struct));
+    orders_sent -> order_items = calloc(ORDERS_DIM, sizeof(order_item));
+    orders_sent -> size = 0;
 
     if (fgets(buffer, BUFFER_DIM, stdin) != NULL) {
         camion_frequency = atoi(strtok(buffer, " "));
@@ -106,7 +128,6 @@ int main(int arc, char const *argv[]) {
             } else if (!strcmp(command, "ordine")) {
                 recipe = strtok(NULL, " ");
                 quantity = atoi(strtok(NULL, " "));
-                printf("%s %s %d\n", command, recipe, quantity);
             } else {
                 printf("Not valid\n");
             } 

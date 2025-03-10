@@ -10,6 +10,7 @@
 #define STRING_DIM 21
 #define BUFFER_DIM 100000
 #define HASH_TABLE_DIM 10000
+#define HASH_TABLE_DIM_RECIPES 40000
 #define MIN_HEAP_DIM 5000
 #define ORDERS_DIM 30000
 #define ORDERS_DIM_WAITING 100000
@@ -204,7 +205,7 @@ int hash_function_recipes(hash_table_recipes *table, char key[]) {
 
 hash_table_recipes* hash_table_recipes_create() {
     hash_table_recipes *table = (hash_table_recipes *) malloc(sizeof(hash_table_recipes));
-    table -> size = HASH_TABLE_DIM;
+    table -> size = HASH_TABLE_DIM_RECIPES;
     table -> count = 0;
 
     table -> recipes_items = calloc(table -> size, sizeof(hash_table_recipes_item));
@@ -395,6 +396,7 @@ ingredient_stock get_min(min_heap_struct *min_heap) {
 void hash_table_insert(hash_table *table, char ingredient[]) {
     int weight, expire, hash;
     hash_table_item *product;
+    char *input;
 
     while (ingredient[0] != '\0') {
         weight = atoi(strtok(NULL, " "));
@@ -418,7 +420,15 @@ void hash_table_insert(hash_table *table, char ingredient[]) {
             table -> count++;
         }
 
-        ingredient = strtok(NULL, " ");
+        input = strtok(NULL, " ");
+        if (input == NULL) {
+            break;
+        }
+        
+        strcpy(ingredient, input);
+    }
+}
+
 int binary_search(order_struct *orders_completed, int timestamp) {
     int right, left, mid;
 

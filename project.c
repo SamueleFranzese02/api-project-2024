@@ -214,16 +214,15 @@ hash_table_recipes* hash_table_recipes_create() {
 
 hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char key[]) {
     int hash = hash_function_recipes(table, key);
+    int counter = 0;
 
-    while (table -> recipes_items[hash].key != NULL) {
+    while (counter < table -> size) {
         if (strcmp(key, table -> recipes_items[hash].key) == 0) {
             return &table -> recipes_items[hash];
-        } else {
-            hash++;
-            if (hash >= table -> size) {
-                return NULL;
-            }
         }
+
+        hash = (hash + 1) % table -> size;
+        counter++;
     }
 
     return NULL;

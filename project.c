@@ -15,13 +15,14 @@
 #define ORDERS_DIM_WAITING 100000
 
 typedef struct {
-    char *ingredient;
+    char ingredient[STRING_DIM];
     int weight;
 } recipe_ingredient;
 
 typedef struct {
-    char *key;
+    char key[STRING_DIM];
     recipe_ingredient *recipe_ingredients;
+    int recipes_num_ingredient;
     int recipes_count;
 } hash_table_recipes_item;
 
@@ -43,7 +44,7 @@ typedef struct {
 } min_heap_struct;
 
 typedef struct {
-    char *key;
+    char key[STRING_DIM];
     min_heap_struct min_heap_ingredient_stocks;
     int weight_tot;
 } hash_table_item;
@@ -55,19 +56,19 @@ typedef struct {
 } hash_table;
 
 // Recipe book methods
-int hash_function_recipes(hash_table_recipes *table, char *key);
+int hash_function_recipes(hash_table_recipes *table, char key[]);
 hash_table_recipes* hash_table_recipes_create();
-hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char *key);
-void hash_table_insert_recipes(hash_table_recipes *table, char *recipe);
-void hash_table_remove_recipe(hash_table_recipes *table, char *recipe);
+hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char key[]);
+void hash_table_insert_recipes(hash_table_recipes *table, char recipe[]);
+void hash_table_remove_recipe(hash_table_recipes *table, char recipe[]);
 float hash_table_load_factor(hash_table_recipes *table);
 float hash_table_load_factor_inventory(hash_table *table);
 
 //Inventory methods
-int hash_function(hash_table *table, char *key);
+int hash_function(hash_table *table, char key[]);
 hash_table* hash_table_create();
-hash_table_item* hash_table_search(hash_table *table, char *key);
-void hash_table_insert(hash_table *table, char *ingredient);
+hash_table_item* hash_table_search(hash_table *table, char key[]);
+void hash_table_insert(hash_table *table, char ingredient[]);
 
 //Min heap methods
 void swap(ingredient_stock *x, ingredient_stock *y);
@@ -77,8 +78,8 @@ ingredient_stock extract_min(min_heap_struct *min_heap);
 ingredient_stock get_min(min_heap_struct *min_heap);
 
 int main(int arc, char const *argv[]) {
-    char buffer[BUFFER_DIM], *command, *recipe, *ingredient;
-    int camion_frequency, camion_weight, quantity, timestamp = 0;
+    char buffer[BUFFER_DIM], command[COMMAND], recipe[STRING_DIM], ingredient[STRING_DIM], *input;
+    int camion_frequency, camion_weight, quantity, timestamp = 0, result;
     hash_table_recipes *recipe_book;
     hash_table *inventory;
 
@@ -88,9 +89,7 @@ int main(int arc, char const *argv[]) {
     if (fgets(buffer, BUFFER_DIM, stdin) != NULL) {
         camion_frequency = atoi(strtok(buffer, " "));
         camion_weight = atoi(strtok(NULL, " "));
-
-        printf("%d %d\n", camion_frequency, camion_weight);
-
+        
         while (fgets(buffer, BUFFER_DIM, stdin) != NULL) {
             buffer[strcspn(buffer, "\n")] = 0;
             command = strtok(buffer, " ");
@@ -116,12 +115,10 @@ int main(int arc, char const *argv[]) {
         }   
     }
 
-    //printf("Carico massimo finale: %.2f\n", hash_table_load_factor(recipe_book));
-    //printf("Carico massimo finale: %.2f\n", hash_table_load_factor_inventory(inventory));
     return 0;
 }
 
-int hash_function_recipes(hash_table_recipes *table, char *key) {
+int hash_function_recipes(hash_table_recipes *table, char key[]) {
     unsigned long hash = 5381;
     int character;
 
@@ -142,7 +139,7 @@ hash_table_recipes* hash_table_recipes_create() {
     return table;
 }
 
-hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char *key) {
+hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, char key[]) {
     int hash = hash_function_recipes(table, key);
 
     while (table -> recipes_items[hash].key != NULL) {
@@ -159,7 +156,7 @@ hash_table_recipes_item* hash_table_search_recipes(hash_table_recipes *table, ch
     return NULL;
 }
 
-void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
+void hash_table_insert_recipes(hash_table_recipes *table, char recipe[]) {
     int hash, weight, i = 0;
     hash_table_recipes_item *recipe_item;
     char *ingredient;
@@ -172,9 +169,9 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
         return;
     }
     
-    while (table -> recipes_items[hash].key != NULL) {
+    while (table -> recipes_items[hash].key[0] != '\0') {
         hash++;
-    }
+    }    
 
     table -> recipes_items[hash].key = strdup(recipe);
     table -> recipes_items[hash].recipe_ingredients = calloc(MIN_HEAP_DIM, sizeof(recipe_ingredient));
@@ -193,11 +190,10 @@ void hash_table_insert_recipes(hash_table_recipes *table, char *recipe) {
     }
 
     printf("aggiunta\n");
-    //printf("Carico massimo: %.2f\n", hash_table_load_factor(table));
     return;
 }
 
-void hash_table_remove_recipe(hash_table_recipes *table, char *recipe) {
+void hash_table_remove_recipe(hash_table_recipes *table, char recipe[]) {
     hash_table_recipes_item *recipe_item;
 
     recipe_item = hash_table_search_recipes(table, recipe);
@@ -207,7 +203,7 @@ void hash_table_remove_recipe(hash_table_recipes *table, char *recipe) {
         return;
     } else if (recipe_item -> recipes_count == 0) {
         free(recipe_item -> recipe_ingredients);
-        recipe_item -> key = NULL;
+        recipe_item -> key[0] = '\0';
         table -> count--;
         printf("rimossa\n");
         return;
@@ -217,7 +213,7 @@ void hash_table_remove_recipe(hash_table_recipes *table, char *recipe) {
     }
 }
 
-int hash_function(hash_table *table, char *key) {
+int hash_function(hash_table *table, char key[]) {
     unsigned long hash = 5381;
     int character;
 
@@ -238,10 +234,10 @@ hash_table* hash_table_create() {
     return table;
 }
 
-hash_table_item* hash_table_search(hash_table *table, char *key) {
+hash_table_item* hash_table_search(hash_table *table, char key[]) {
     int hash = hash_function(table, key);
 
-    while (table -> items[hash].key != NULL) {
+    while (table -> items[hash].key[0] != '\0') {
         if (strcmp(key, table -> items[hash].key) == 0) {
             return &table -> items[hash];
         } else {
@@ -317,11 +313,11 @@ ingredient_stock get_min(min_heap_struct *min_heap) {
     return min_heap -> ingredient_stocks[0];
 }
 
-void hash_table_insert(hash_table *table, char *ingredient) {
+void hash_table_insert(hash_table *table, char ingredient[]) {
     int weight, expire, hash;
     hash_table_item *product;
 
-    while (ingredient != NULL) {
+    while (ingredient[0] != '\0') {
         weight = atoi(strtok(NULL, " "));
         expire = atoi(strtok(NULL, " "));
         
@@ -332,11 +328,11 @@ void hash_table_insert(hash_table *table, char *ingredient) {
             insert_min_heap(&product -> min_heap_ingredient_stocks, expire, weight);
             product -> weight_tot = product -> weight_tot + weight;
         } else {
-            while (table -> items[hash].key != NULL) {
+            while (table -> items[hash].key[0] != '\0') {
                 hash++;
             }
 
-            table -> items[hash].key = strdup(ingredient);
+            strcpy(table -> items[hash].key, ingredient);
             table -> items[hash].min_heap_ingredient_stocks.size = 0;
             insert_min_heap(&table -> items[hash].min_heap_ingredient_stocks, expire, weight);
             table -> items[hash].weight_tot = weight;
@@ -349,14 +345,14 @@ void hash_table_insert(hash_table *table, char *ingredient) {
 
 float hash_table_load_factor(hash_table_recipes *table) {
     if (table->size == 0) {
-        return 0.0; // Evita divisione per zero
+        return 0.0;
     }
     return (float)table->count / table->size;
 }
 
 float hash_table_load_factor_inventory(hash_table *table) {
     if (table->size == 0) {
-        return 0.0; // Evita divisione per zero
+        return 0.0;
     }
     return (float)table->count / table->size;
 }

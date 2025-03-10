@@ -141,17 +141,40 @@ int main(int arc, char const *argv[]) {
                 strcpy(ingredient, input);
                 hash_table_insert(inventory, ingredient);
                 printf("rifornito\n");
+                
+                if (orders_pending -> size != 0) {
+                    for (int i = 0; i < orders_pending -> size;) {
+                        result = make_order(inventory, recipe_book, orders_completed, orders_pending, orders_pending -> order_items[i].order_name, orders_pending -> order_items[i].quantity, orders_pending -> order_items[i].timestamp, 1, timestamp);
+                        
+                        if (result == 2) {
+                            memmove(orders_pending -> order_items + i, orders_pending -> order_items + i + 1, (orders_pending -> size - i - 1) * sizeof(order_item));
+                            orders_pending -> size--;
+                        } else {
+                            i++;
+                        }
+                        
+                    }
+                }
+                
             } else if (!strcmp(command, "ordine")) {
                 input = strtok(NULL, " ");
                 strcpy(recipe, input);
                 quantity = atoi(strtok(NULL, " "));
+                result = make_order(inventory, recipe_book, orders_completed, orders_pending, recipe, quantity, timestamp, 0, timestamp);
+
+                if (result == 1 || result == -1) {
+                    printf("accettato\n");
+                } else if (result == -2) {
+                    printf("rifiutato\n");
+
+                }
+                                
             } else {
                 printf("Not valid\n");
             } 
 
             timestamp++;
-        }   
-    }
+        } 
 
         if (timestamp % camion_frequency == 0 && timestamp != 0) {
             send_orders_completed(recipe_book, orders_completed, orders_sent, camion_weight);

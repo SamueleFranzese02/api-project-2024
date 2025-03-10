@@ -91,6 +91,7 @@ ingredient_stock get_min(min_heap_struct *min_heap);
 
 int make_order(hash_table *inventory, hash_table_recipes *recipe_book, order_struct *orders_completed, order_struct *orders_pending, char recipe[], int quantity, int timestamp, int waiting, int current_timestamp);
 void remove_expired(hash_table_item *ingredient, int timestamp);
+void send_orders_completed(hash_table_recipes *table, order_struct *orders_completed, order_struct *orders_sent, int camion_weight);
 void merge(order_struct *orders_sent, int p, int q, int r);
 
 int binary_search(order_struct *orders_completed, int timestamp);
@@ -121,7 +122,10 @@ int main(int arc, char const *argv[]) {
         
         while (fgets(buffer, BUFFER_DIM, stdin) != NULL) {
             buffer[strcspn(buffer, "\n")] = 0;
-            command = strtok(buffer, " ");
+            if (timestamp % camion_frequency == 0 && timestamp != 0) {
+                send_orders_completed(recipe_book, orders_completed, orders_sent, camion_weight);
+            }
+            
             input = strtok(buffer, " ");
             strcpy(command, input);
             if (!strcmp(command, "aggiungi_ricetta")) {
@@ -149,6 +153,11 @@ int main(int arc, char const *argv[]) {
         }   
     }
 
+        if (timestamp % camion_frequency == 0 && timestamp != 0) {
+            send_orders_completed(recipe_book, orders_completed, orders_sent, camion_weight);
+        }
+    }
+    
     free_structs(inventory, recipe_book);
     free(orders_completed ->order_items);
     free(orders_completed);
@@ -558,6 +567,45 @@ void merge_sort(order_struct *orders_sent, int p, int r) {
             orders_sent -> order_items[p] = tmp;
         }   
     }
+}
+
+void send_orders_completed(hash_table_recipes* table, order_struct *orders_completed, order_struct *orders_sent, int camion_weight) {
+    int num_items = 0;
+
+    for (int i = 0, j = orders_sent -> size; i < orders_completed -> size; i++, j++) {
+        if (orders_completed -> order_items[i].weight <= camion_weight) {
+            camion_weight = camion_weight - orders_completed -> order_items[i].weight;
+            strcpy(orders_sent -> order_items[j].order_name, orders_completed -> order_items[i].order_name);
+            orders_sent -> order_items[j].quantity = orders_completed -> order_items[i].quantity;
+            orders_sent -> order_items[j].timestamp = orders_completed -> order_items[i].timestamp;
+            orders_sent -> order_items[j].weight = orders_completed -> order_items[i].weight;
+
+            hash_table_search_recipes(table, orders_completed -> order_items[i].order_name) -> recipes_count--;
+            num_items++;
+        } else {
+            break;
+        }
+    }
+
+    if (num_items > 0) {
+        memmove(orders_completed -> order_items, orders_completed -> order_items + num_items, (orders_completed -> size - num_items) * sizeof(order_item));
+        orders_completed -> size = orders_completed -> size - num_items;
+        orders_sent -> size = orders_sent -> size + num_items;
+    } else if (num_items == 0) {
+        printf("camioncino vuoto\n");
+        return;
+    }
+    
+    
+    merge_sort(orders_sent, 0, orders_sent -> size - 1);
+    for (int i = 0; i < orders_sent -> size; i++) {
+        printf("%d %s %d\n", orders_sent -> order_items[i].timestamp, orders_sent -> order_items[i].order_name, orders_sent -> order_items[i].quantity);
+        orders_sent -> order_items[i].order_name[0] = '\0';
+        orders_sent -> order_items[i].timestamp = 0;
+        orders_sent -> order_items[i].weight = 0;
+    }
+
+    orders_sent -> size = 0;
 }
 
 float hash_table_load_factor(hash_table_recipes *table) {

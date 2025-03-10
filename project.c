@@ -89,6 +89,8 @@ void insert_min_heap(min_heap_struct *min_heap, int expire, int weight);
 ingredient_stock extract_min(min_heap_struct *min_heap);
 ingredient_stock get_min(min_heap_struct *min_heap);
 
+void free_structs(hash_table *inventory, hash_table_recipes* recipe_book);
+
 int main(int arc, char const *argv[]) {
     char buffer[BUFFER_DIM], command[COMMAND], recipe[STRING_DIM], ingredient[STRING_DIM], *input;
     int camion_frequency, camion_weight, quantity, timestamp = 0, result;
@@ -136,6 +138,13 @@ int main(int arc, char const *argv[]) {
         }   
     }
 
+    free_structs(inventory, recipe_book);
+    free(orders_completed ->order_items);
+    free(orders_completed);
+    free(orders_pending ->order_items);
+    free(orders_pending);
+    free(orders_sent->order_items);
+    free(orders_sent);
     return 0;
 }
 
@@ -376,4 +385,19 @@ float hash_table_load_factor_inventory(hash_table *table) {
         return 0.0;
     }
     return (float)table->count / table->size;
+}
+
+void free_structs(hash_table *inventory, hash_table_recipes* recipe_book) {
+    free(inventory->items);
+    free(inventory);
+    
+    for (int i = 0; i < recipe_book -> size; i++) {
+        if (recipe_book ->recipes_items[i].key[0] != '\0') {
+            free(recipe_book ->recipes_items[i].recipe_ingredients);
+        }
+        
+    }
+    free(recipe_book->recipes_items);
+    free(recipe_book);
+    return;
 }

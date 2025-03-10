@@ -89,6 +89,7 @@ void insert_min_heap(min_heap_struct *min_heap, int expire, int weight);
 ingredient_stock extract_min(min_heap_struct *min_heap);
 ingredient_stock get_min(min_heap_struct *min_heap);
 
+int make_order(hash_table *inventory, hash_table_recipes *recipe_book, order_struct *orders_completed, order_struct *orders_pending, char recipe[], int quantity, int timestamp, int waiting, int current_timestamp);
 void remove_expired(hash_table_item *ingredient, int timestamp);
 void free_structs(hash_table *inventory, hash_table_recipes* recipe_book);
 
@@ -385,6 +386,107 @@ void remove_expired(hash_table_item *ingredient, int timestamp) {
     }
 }
 
+int make_order(hash_table *inventory, hash_table_recipes *recipe_book, order_struct *orders_completed, order_struct *orders_pending, char recipe[], int quantity, int timestamp, int waiting, int current_timestamp) {
+    hash_table_recipes_item *recipe_item;
+    hash_table_item **ingredient_item = calloc(100, sizeof(hash_table_item *));
+    recipe_ingredient *recipe_ingredients;
+    int i = 0, j = 0, weight_needed, weight_current, order_weight = 0, timestamp_insert;
+
+    recipe_item = hash_table_search_recipes(recipe_book, recipe);  
+
+    if (recipe_item != NULL) {
+        recipe_ingredients = recipe_item -> recipe_ingredients;
+        while (recipe_ingredients[i].ingredient[0] != '\0') {
+            ingredient_item[j] = hash_table_search(inventory, recipe_ingredients[i].ingredient);
+            if (ingredient_item[j] == NULL) {
+                if (waiting == 0){
+                    strcpy(orders_pending -> order_items[orders_pending -> size].order_name, recipe);
+                    orders_pending -> order_items[orders_pending -> size].quantity = quantity;
+                    orders_pending -> order_items[orders_pending -> size].timestamp = timestamp;
+                    orders_pending -> order_items[orders_pending -> size].weight = 0;
+                    orders_pending -> size++;
+                    recipe_item -> recipes_count++;
+                }
+                return -1;
+            }
+            
+            weight_needed = recipe_ingredients[i].weight * quantity;
+            remove_expired(ingredient_item[j], current_timestamp);
+            if (weight_needed > ingredient_item[j] -> weight_tot) {
+                if (waiting == 0) {
+                    strcpy(orders_pending -> order_items[orders_pending -> size].order_name, recipe);
+
+                    orders_pending -> order_items[orders_pending -> size].quantity = quantity;
+                    orders_pending -> order_items[orders_pending -> size].timestamp = timestamp;
+                    orders_pending -> order_items[orders_pending -> size].weight = 0;
+                    orders_pending -> size++;
+                    recipe_item -> recipes_count++;
+                }
+                return -1;
+            }
+            i++;
+            j++;
+        }
+
+        i = 0, j = 0;
+        recipe_ingredients = recipe_item -> recipe_ingredients;
+
+        while (recipe_ingredients[i].ingredient[0] != '\0') {
+            weight_needed = recipe_ingredients[i].weight * quantity;
+            order_weight = order_weight + weight_needed;
+
+            while (weight_needed != 0) {
+                weight_current = ingredient_item[j] -> min_heap_ingredient_stocks.ingredient_stocks[0].weight;
+                if (weight_needed - weight_current < 0) {
+                    ingredient_item[j] -> min_heap_ingredient_stocks.ingredient_stocks[0].weight = ingredient_item[j] -> min_heap_ingredient_stocks.ingredient_stocks[0].weight - weight_needed;
+                    ingredient_item[j] -> weight_tot = ingredient_item[j] -> weight_tot - weight_needed;
+                    weight_needed = 0;
+                } else if (weight_needed - weight_current > 0) {
+                    weight_needed = weight_needed - weight_current;
+                    ingredient_item[j] -> weight_tot = ingredient_item[j] -> weight_tot - weight_current;
+                    extract_min(&ingredient_item[j] -> min_heap_ingredient_stocks);
+                } else {
+                    weight_needed = weight_needed - weight_current;
+                    ingredient_item[j] -> weight_tot = ingredient_item[j] -> weight_tot - weight_current;
+                    extract_min(&ingredient_item[j] -> min_heap_ingredient_stocks);
+                }
+            } 
+            i++;
+            j++;
+        }
+        
+        if (waiting == 0) {
+            strcpy(orders_completed -> order_items[orders_completed -> size].order_name, recipe);
+            orders_completed -> order_items[orders_completed -> size].quantity = quantity;
+            orders_completed -> order_items[orders_completed -> size].timestamp = timestamp;
+            orders_completed -> order_items[orders_completed -> size].weight = order_weight;
+            orders_completed -> size++;
+            recipe_item -> recipes_count++;
+            
+        } else {
+            if (orders_completed -> size != 0) {
+                timestamp_insert = binary_search(orders_completed, timestamp);
+                if (timestamp_insert != orders_completed -> size) {
+                    memmove(orders_completed -> order_items + timestamp_insert + 1, orders_completed -> order_items + timestamp_insert, (orders_completed -> size - timestamp_insert) * sizeof(order_item));
+                }
+            } else {
+                timestamp_insert = 0;
+            }
+            strcpy(orders_completed -> order_items[timestamp_insert].order_name, recipe);
+            orders_completed -> order_items[timestamp_insert].quantity = quantity;
+            orders_completed -> order_items[timestamp_insert].timestamp = timestamp;
+            orders_completed -> order_items[timestamp_insert].weight = order_weight;
+            orders_completed -> size++;
+
+            return 2;
+        }
+        
+    } else {
+        return -2;
+    }
+
+    return 1;
+}
 float hash_table_load_factor(hash_table_recipes *table) {
     if (table->size == 0) {
         return 0.0;

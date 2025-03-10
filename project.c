@@ -89,6 +89,7 @@ void insert_min_heap(min_heap_struct *min_heap, int expire, int weight);
 ingredient_stock extract_min(min_heap_struct *min_heap);
 ingredient_stock get_min(min_heap_struct *min_heap);
 
+void remove_expired(hash_table_item *ingredient, int timestamp);
 void free_structs(hash_table *inventory, hash_table_recipes* recipe_book);
 
 int main(int arc, char const *argv[]) {
@@ -117,18 +118,24 @@ int main(int arc, char const *argv[]) {
         while (fgets(buffer, BUFFER_DIM, stdin) != NULL) {
             buffer[strcspn(buffer, "\n")] = 0;
             command = strtok(buffer, " ");
+            input = strtok(buffer, " ");
+            strcpy(command, input);
             if (!strcmp(command, "aggiungi_ricetta")) {
-                recipe = strtok(NULL, " ");
+                input = strtok(NULL, " ");
+                strcpy(recipe, input);               
                 hash_table_insert_recipes(recipe_book, recipe);
             } else if (!strcmp(command, "rimuovi_ricetta")) {
-                recipe = strtok(NULL, " ");
+                input = strtok(NULL, " ");
+                strcpy(recipe, input);
                 hash_table_remove_recipe(recipe_book, recipe);
             } else if (!strcmp(command, "rifornimento")) {
-                ingredient = strtok(NULL, " ");
+                input = strtok(NULL, " ");
+                strcpy(ingredient, input);
                 hash_table_insert(inventory, ingredient);
-                printf("\n");
+                printf("rifornito\n");
             } else if (!strcmp(command, "ordine")) {
-                recipe = strtok(NULL, " ");
+                input = strtok(NULL, " ");
+                strcpy(recipe, input);
                 quantity = atoi(strtok(NULL, " "));
             } else {
                 printf("Not valid\n");
@@ -370,6 +377,11 @@ void hash_table_insert(hash_table *table, char ingredient[]) {
         }
 
         ingredient = strtok(NULL, " ");
+void remove_expired(hash_table_item *ingredient, int timestamp) {
+    while (ingredient -> min_heap_ingredient_stocks.size > 0 && ingredient -> min_heap_ingredient_stocks.ingredient_stocks[0].expire <= timestamp) {
+
+        ingredient -> weight_tot = ingredient -> weight_tot - extract_min(&ingredient -> min_heap_ingredient_stocks).weight;
+
     }
 }
 

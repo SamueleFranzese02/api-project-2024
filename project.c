@@ -245,19 +245,26 @@ void hash_table_insert_recipes(hash_table_recipes *table, char recipe[]) {
         hash++;
     }    
 
-    table -> recipes_items[hash].key = strdup(recipe);
-    table -> recipes_items[hash].recipe_ingredients = calloc(MIN_HEAP_DIM, sizeof(recipe_ingredient));
+    strcpy(table -> recipes_items[hash].key, recipe);
+    table -> recipes_items[hash].recipe_ingredients = calloc(5, sizeof(recipe_ingredient));
     table -> recipes_items[hash].recipes_count = 0;
+    table -> recipes_items[hash].recipes_num_ingredient = 5;
     table -> count++;
 
     ingredient = strtok(NULL, " ");
     while (ingredient != NULL) {
         weight = atoi(strtok(NULL, " "));
 
-        table -> recipes_items[hash].recipe_ingredients[i].ingredient = strdup(ingredient);
+
+        strcpy(table -> recipes_items[hash].recipe_ingredients[i].ingredient,ingredient);
         table -> recipes_items[hash].recipe_ingredients[i].weight = weight;
 
         i++;
+        if (i >= table -> recipes_items[hash].recipes_num_ingredient) {
+            table -> recipes_items[hash].recipe_ingredients = realloc(table -> recipes_items[hash].recipe_ingredients, (table -> recipes_items[hash].recipes_num_ingredient + 5) * sizeof(recipe_ingredient));
+            table -> recipes_items[hash].recipes_num_ingredient = table -> recipes_items[hash].recipes_num_ingredient + 5;
+            memset(&table->recipes_items[hash].recipe_ingredients[i], 0, (table->recipes_items[hash].recipes_num_ingredient - i) * sizeof(recipe_ingredient));
+        }
         ingredient = strtok(NULL, " ");
     }
 

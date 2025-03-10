@@ -91,6 +91,9 @@ ingredient_stock get_min(min_heap_struct *min_heap);
 
 int make_order(hash_table *inventory, hash_table_recipes *recipe_book, order_struct *orders_completed, order_struct *orders_pending, char recipe[], int quantity, int timestamp, int waiting, int current_timestamp);
 void remove_expired(hash_table_item *ingredient, int timestamp);
+void merge(order_struct *orders_sent, int p, int q, int r);
+
+int binary_search(order_struct *orders_completed, int timestamp);
 void free_structs(hash_table *inventory, hash_table_recipes* recipe_book);
 
 int main(int arc, char const *argv[]) {
@@ -378,6 +381,25 @@ void hash_table_insert(hash_table *table, char ingredient[]) {
         }
 
         ingredient = strtok(NULL, " ");
+int binary_search(order_struct *orders_completed, int timestamp) {
+    int right, left, mid;
+
+    left = 0;
+    right = orders_completed -> size;
+
+    while(left < right) {
+        mid = left + (right - left) / 2;
+
+        if (orders_completed -> order_items[mid].timestamp < timestamp) {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+
+    return left;
+}
+
 void remove_expired(hash_table_item *ingredient, int timestamp) {
     while (ingredient -> min_heap_ingredient_stocks.size > 0 && ingredient -> min_heap_ingredient_stocks.ingredient_stocks[0].expire <= timestamp) {
 
@@ -487,6 +509,57 @@ int make_order(hash_table *inventory, hash_table_recipes *recipe_book, order_str
 
     return 1;
 }
+
+void merge(order_struct *orders_sent, int p, int q, int r) {
+    int len1 = q - p + 1;
+    int len2 = r - q;
+
+    order_item *left = (order_item *) malloc((len1 + 1) * sizeof(order_item));
+    order_item *right = (order_item *) malloc((len2 + 1) * sizeof(order_item));
+
+    for (int i = 0; i < len1; i++) {
+        left[i] = orders_sent -> order_items[p + i];
+    }
+    for (int i = 0; i < len2; i++) {
+        right[i] = orders_sent -> order_items[q + i + 1];
+    }
+    
+    left[len1].weight = INT_MIN;
+    right[len2].weight = INT_MIN;
+
+    int i = 0, j = 0;
+    for (int k = p; k <= r; k++) {
+        if (left[i].weight > right[j].weight || (left[i].weight == right[j].weight && left[i].timestamp <= right[j].timestamp)) {
+            orders_sent -> order_items[k] = left[i];
+            i++;
+        } else {
+            orders_sent -> order_items[k] = right[j];
+            j++;
+        }
+    }
+    
+    free(left);
+    free(right);
+}
+
+void merge_sort(order_struct *orders_sent, int p, int r) {
+    int q;
+
+    if (p < r - 1) {
+        q = (p + r) / 2;
+
+        merge_sort(orders_sent, p, q);
+        merge_sort(orders_sent, q + 1, r);
+        merge(orders_sent, p, q, r);
+    } else {
+        if (orders_sent -> order_items[p].weight < orders_sent -> order_items[r].weight) {
+            order_item tmp = orders_sent -> order_items[r];
+            orders_sent -> order_items[r] = orders_sent -> order_items[p];
+            orders_sent -> order_items[p] = tmp;
+        }   
+    }
+}
+
 float hash_table_load_factor(hash_table_recipes *table) {
     if (table->size == 0) {
         return 0.0;

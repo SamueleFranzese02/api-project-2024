@@ -3,11 +3,16 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <limits.h>
+#include <assert.h>
 
-#define COMMAND 16
+#define COMMAND 17
+#define STRING_DIM 21
 #define BUFFER_DIM 100000
-#define HASH_TABLE_DIM 40000
-#define MIN_HEAP_DIM 1500
+#define HASH_TABLE_DIM 10000
+#define MIN_HEAP_DIM 5000
+#define ORDERS_DIM 30000
+#define ORDERS_DIM_WAITING 100000
 
 typedef struct {
     char *ingredient;
